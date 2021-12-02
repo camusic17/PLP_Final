@@ -193,14 +193,14 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 			}
 			else if(left.getType().isKind(TypeKind.STRING))		//if the type of the left expression is STRING
 			{
-				Label eq_l1 = new Label();
-				mv.visitJumpInsn(IF_ACMPNE, eq_l1);
+				start = new Label();
+				mv.visitJumpInsn(IF_ACMPEQ, start);
 				mv.visitInsn(ICONST_1);
-				Label eq_l2 = new Label();
-				mv.visitJumpInsn(GOTO, eq_l2);
-				mv.visitLabel(eq_l1);
+				stop = new Label();
+				mv.visitJumpInsn(GOTO, stop);
+				mv.visitLabel(start);
 				mv.visitInsn(ICONST_0);
-				mv.visitLabel(eq_l2);
+				mv.visitLabel(stop);
 			}
 		}
 		else if(op == Kind.NOT_EQUALS)
@@ -227,7 +227,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		else if(op == Kind.LT)
 		{
 			//returns bool
-			if(left.getType().isKind(TypeKind.INT) )		//if the type of the left expression is INT
+			if(left.getType().isKind(TypeKind.INT) )		
 			{
 				start = new Label();
 				mv.visitJumpInsn(IF_ICMPGE, start);
@@ -238,7 +238,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 				mv.visitInsn(ICONST_0);
 				mv.visitLabel(stop);
 			}
-			else if(left.getType().isKind(TypeKind.STRING))		//if the type of the left expression is STRING
+			else if(left.getType().isKind(TypeKind.STRING))		
 			{				
 				
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z", false);
@@ -249,7 +249,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		else if(op == Kind.GT)
 		{
 			//returns bool
-			if(left.getType().isKind(TypeKind.INT))		//if the type of the left expression is INT
+			if(left.getType().isKind(TypeKind.INT))		
 			{
 				start = new Label();
 				mv.visitJumpInsn(IF_ICMPLE, start);
@@ -281,7 +281,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 			else if(leftType.isString() && rightType.isString())		//if the type of the left & right exprs is STRING
 			{
 				//not sure if this is right
-				//for some reason this concatentates the first string to itself, not the first to the second
+				//for some reason this concatenates the first string to itself, not the first to the second
 				
 				//mv.visitVarInsn(ALOAD, 0);
 				//mv.visitFieldInsn(GETFIELD, className, "y", stringDesc);
@@ -423,20 +423,12 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		String name = n.getName().getName();
 		
 		List<IExpression> exprList = n.getArgs();
-		
-		//StringBuilder sb = new StringBuilder();	
-		//sb.append("(");
-		
+
 		for( IExpression e: exprList) {
-			//String desc = e.getType().getDesc();
-			//sb.append(desc);
+
 			e.visit(this, arg);
 		}
-		//sb.append(")");
-		//sb.append(n.getResultType().getDesc());
-		//String desc = sb.toString();
-		
-		//MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, name, desc, null, null);
+
 		
 		System.out.println("GOT TO END OF visitIFunctionCallExpression");
 		return null;
@@ -679,8 +671,6 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		
 		n.getGuardExpression().visit(this, arg);
 		n.getBlock().visit(this, arg);
-		
-	
 		
 		return null;
 		//throw new UnsupportedOperationException("TO IMPLEMENT");
