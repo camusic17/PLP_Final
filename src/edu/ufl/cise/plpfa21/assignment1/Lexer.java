@@ -14,10 +14,10 @@ public class Lexer implements IPLPLexer {
 	private int nextTokenPos = 0;
 	static final char EOFchar = 0;
 	
-	public HashMap<String, Kind> keywords = new HashMap<String, Kind>();
+	private HashMap<String, Kind> keywords = new HashMap<String, Kind>();
 	
 	//enums for dfa states
-	private enum State{START, HAVE_EQUAL, HAVE_AND, HAVE_OR, HAVE_NOT, INTLITERAL, IDENT_PART, HAVE_SLASH, HAVE_MCOMMENT, HAVE_SCOMMENT, HAVE_STRINGLIT,HAVE_QUOTE, ESCAPE_SEQ}
+	private enum State{START, HAVE_EQUAL, HAVE_AND, HAVE_OR, HAVE_NOT, INTLITERAL, IDENT_PART, HAVE_SLASH, HAVE_MCOMMENT, HAVE_SCOMMENT, HAVE_STRINGLIT, ESCAPE_SEQ}
 	
 	
 	public Lexer(String inputString) 
@@ -92,6 +92,105 @@ public class Lexer implements IPLPLexer {
 							posInLine = 1;
 							line++;
 						}
+						case ',' ->
+						{
+							//add token
+							tokens.add(new Token(Kind.COMMA,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case ';' ->
+						{
+							tokens.add(new Token(Kind.SEMI,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case ':' ->
+						{
+							tokens.add(new Token(Kind.COLON,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case '(' ->
+						{
+							tokens.add(new Token(Kind.LPAREN,startPos,1,line,posInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case ')' ->
+						{
+							tokens.add(new Token(Kind.RPAREN,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case '[' ->
+						{
+							tokens.add(new Token(Kind.LSQUARE,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case ']' ->
+						{
+							tokens.add(new Token(Kind.RSQUARE,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case '<' ->
+						{
+							tokens.add(new Token(Kind.LT,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case '>' ->
+						{
+							tokens.add(new Token(Kind.GT,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}					
+						case '+' ->
+						{
+							tokens.add(new Token(Kind.PLUS,startPos,1,line,posInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case '-' ->
+						{
+							tokens.add(new Token(Kind.MINUS, startPos, 1, line, startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case '*' ->
+						{
+							tokens.add(new Token(Kind.TIMES,startPos,1,line,startPosInLine, inputString));
+							pos++;
+							posInLine++;
+						}
+						case '&' ->
+						{
+							//change state for double symbols
+							state = State.HAVE_AND;
+							pos++;
+							posInLine++;
+						}
+						case '|' ->
+						{
+							state = State.HAVE_OR;
+							pos++;
+							posInLine++;
+						}
+						
+						case '!' ->
+						{
+							state = State.HAVE_NOT;							
+							pos++;
+							posInLine++;
+						}
+						case '/' ->
+						{
+							state = State.HAVE_SLASH;
+							pos++;
+							posInLine++;
+						}
 						case '=' ->
 						{							
 							startPosInLine = posInLine;
@@ -104,132 +203,7 @@ public class Lexer implements IPLPLexer {
 							startPosInLine = posInLine;
 							pos++;
 							posInLine++;
-							state = State.HAVE_QUOTE;
-						}
-						case ',' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.COMMA,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case ';' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.SEMI,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case ':' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.COLON,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '(' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.LPAREN,startPos,1,line,posInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case ')' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.RPAREN,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '[' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.LSQUARE,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case ']' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.RSQUARE,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						//not correct, how to read double symbols?
-						case '&' ->
-						{
-							//change state for double symbols
-							state = State.HAVE_AND;
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '|' ->
-						{
-							//change state for double symbols
-							state = State.HAVE_OR;
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '<' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.LT,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '>' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.GT,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '!' ->
-						{
-							state = State.HAVE_NOT;							
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '+' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.PLUS,startPos,1,line,posInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '-' ->
-						{
-							startPosInLine = posInLine;
-							pos++;
-							posInLine++;
-							tokens.add(new Token(Kind.MINUS, startPos, 1, line, startPosInLine, inputString));
-						}
-						case '*' ->
-						{
-							//add token
-							tokens.add(new Token(Kind.TIMES,startPos,1,line,startPosInLine, inputString));
-							//index
-							pos++;
-							posInLine++;
-						}
-						case '/' ->
-						{
-							state = State.HAVE_SLASH;
-							pos++;
-							posInLine++;
+							state = State.HAVE_STRINGLIT;
 						}
 						case '0','1','2','3','4','5','6','7','8','9' ->
 						{
@@ -248,8 +222,7 @@ public class Lexer implements IPLPLexer {
 								inProgIdent += ch;
 								pos++;
 								posInLine++;
-								state = State.IDENT_PART;
-								
+								state = State.IDENT_PART;							
 							}
 							else	
 							{
@@ -265,58 +238,6 @@ public class Lexer implements IPLPLexer {
 						}
 					}
 				}
-				case ESCAPE_SEQ -> {
-					switch (ch) {
-						case 'b', 't', 'n', 'r', '"', '\'', '\\' -> {
-							pos++;
-							posInLine++;
-							state = State.HAVE_QUOTE;
-						}
-						default -> {
-							tokens.add(new Token(Kind.ERROR,startPos,pos - startPos,line,startPosInLine, inputString));
-						}
-					}
-				}
-				case HAVE_QUOTE -> {
-					switch (ch) {
-						case '"' -> {
-							tokens.add(new Token(Kind.STRING_LITERAL, startPos, 1 + pos - startPos, line, startPosInLine, inputString));
-							pos++;
-							posInLine++;
-							state = State.START;
-						}
-						case '\\' -> {
-							pos++;
-							posInLine++;
-							state = State.ESCAPE_SEQ;
-						}
-						case '\n', '\r' -> {
-							tokens.add(new Token(Kind.ERROR,startPos,pos - startPos,line,startPosInLine, inputString));
-						}
-						case EOFchar -> {
-							tokens.add(new Token(Kind.ERROR,startPos,pos - startPos,line,startPosInLine, inputString));
-						}
-						default -> {
-							pos++;
-							posInLine++;
-						}
-					}
-				}			
-				case HAVE_EQUAL ->
-				{
-					if(ch == '=')
-					{
-						tokens.add(new Token(Kind.EQUALS,startPos,2,line,startPosInLine, inputString));
-						pos++;
-						posInLine++;
-						state = State.START;
-					}
-					else
-					{
-						tokens.add(new Token(Kind.ASSIGN,startPos,1,line,startPosInLine, inputString));					
-						state = State.START;
-					}
-				}
 				case HAVE_AND ->
 				{
 					if(ch == '&')
@@ -329,13 +250,11 @@ public class Lexer implements IPLPLexer {
 					else
 					{
 						//throw error
-						//throw new LexicalException("Unexpected token",line,pos);
 						tokens.add(new Token(Kind.ERROR,startPos,pos - startPos,line,startPosInLine, inputString));
 						pos++;
 						posInLine++;
 						state = State.START;
-					}
-					
+					}				
 				}
 				case HAVE_OR ->
 				{
@@ -348,8 +267,6 @@ public class Lexer implements IPLPLexer {
 					}
 					else
 					{
-						//throw error
-						//throw new LexicalException("Unexpected token",line,pos);
 						tokens.add(new Token(Kind.ERROR,startPos,pos - startPos,line,startPosInLine, inputString));
 						pos++;
 						posInLine++;
@@ -371,22 +288,124 @@ public class Lexer implements IPLPLexer {
 						state = State.START;
 					}
 				}
-				case HAVE_STRINGLIT ->
+				case HAVE_SLASH ->
+				{				
+					if(ch == '/')	//single line comment
+					{
+						pos++;		
+						posInLine++;
+						state = State.HAVE_SCOMMENT;
+
+					}
+					else if(ch == '*')	//multiline comment
+					{
+						pos++;		
+						posInLine++;
+						state = State.HAVE_MCOMMENT;					
+					}
+					else	//division
+					{
+						tokens.add(new Token(Kind.DIV,startPos,1,line,startPosInLine, inputString));
+						state = State.START;
+					}
+				}
+				case HAVE_EQUAL ->
 				{
-					if( chars[pos] == '\'' || chars[pos] == '\"')	//if ch == ' || " , end of string lit, add token
-					{					
+					if(ch == '=')
+					{
+						tokens.add(new Token(Kind.EQUALS,startPos,2,line,startPosInLine, inputString));
 						pos++;
 						posInLine++;
-						tokens.add(new Token(Kind.STRING_LITERAL, startPos,pos - startPos,line,startPosInLine, inputString));
 						state = State.START;
 					}
 					else
 					{
-						pos++;		//if not end of string or escape seq, skip chars
+						tokens.add(new Token(Kind.ASSIGN,startPos,1,line,startPosInLine, inputString));					
+						state = State.START;
+					}
+				}
+				case HAVE_STRINGLIT -> {
+					
+					if(ch == '"') {
+//						System.out.println("INPUT STRING: " + inputString);
+//						Token t = new Token(Kind.STRING_LITERAL, startPos, 1 + pos - startPos, line, startPosInLine, inputString);
+//						t.getText();
+//						System.out.println("TOKEN STRING: " + t.getText());
+						
+						
+						tokens.add(new Token(Kind.STRING_LITERAL, startPos, 1 + pos - startPos, line, startPosInLine, inputString));
+						pos++;
+						posInLine++;
+						state = State.START;
+					}
+					else if(ch =='\\') {
+						pos++;
+						posInLine++;
+						state = State.ESCAPE_SEQ;
+					}
+					else {
+						pos++;
 						posInLine++;
 					}
-					//System.out.println(chars[pos]);
-					//System.out.println(ch);	
+					
+				}	
+				case INTLITERAL ->
+				{					
+					if(Character.isDigit(ch))
+					{
+						digits += ch;
+						pos++;
+						posInLine++;
+					}
+					else
+					{						
+						try
+						{
+							Integer.parseInt(digits);
+							tokens.add(new Token(Kind.INT_LITERAL, startPos,pos - startPos,line,startPosInLine, inputString));
+						}
+						catch(NumberFormatException e)
+						{
+							tokens.add(new Token(Kind.ERROR,startPos,pos - startPos,line,startPosInLine, inputString));
+						}
+						
+						state = State.START;
+						digits = "";
+					}
+				}
+				case IDENT_PART ->
+				{
+					if(Character.isJavaIdentifierPart(ch) && ch != EOFchar)
+					{
+						inProgIdent += ch;
+						pos++;
+						posInLine++;
+					}
+					else
+					{
+						if(keywords.containsKey(inProgIdent))
+						{
+							tokens.add(new Token(keywords.get(inProgIdent),startPos, pos- startPos, line, startPosInLine , inputString));
+						}
+						else
+						{
+							tokens.add(new Token(Kind.IDENTIFIER,startPos, pos- startPos, line, startPosInLine, inputString ));
+						}
+						state = State.START;
+						inProgIdent = "";
+					}
+				}
+				case ESCAPE_SEQ -> {
+					switch (ch) {
+						case 'b', 't', 'n', 'r', '"', '\'', '\\' -> {
+							pos++;
+							posInLine++;
+							state = State.HAVE_STRINGLIT;
+						}
+						default -> {
+							tokens.add(new Token(Kind.ERROR,startPos,pos - startPos,line,startPosInLine, inputString));
+						}
+					}
 				}
 				case HAVE_SCOMMENT ->
 				{
@@ -410,8 +429,7 @@ public class Lexer implements IPLPLexer {
 					}
 				}
 				case HAVE_MCOMMENT ->
-				{
-					
+				{				
 					if(ch == '*')
 					{
 						pos++;
@@ -438,108 +456,12 @@ public class Lexer implements IPLPLexer {
 						posInLine++;
 						state = State.HAVE_MCOMMENT;
 					}
-
-				}
-				case HAVE_SLASH ->
-				{
-					
-					if(ch == '/')	//single line comment
-					{
-						pos++;		
-						posInLine++;
-						state = State.HAVE_SCOMMENT;
-
-					}
-					else if(ch == '*')	//multiline comment
-					{
-						pos++;		
-						posInLine++;
-						state = State.HAVE_MCOMMENT;
-						
-					}
-					else	//division
-					{
-						tokens.add(new Token(Kind.DIV,startPos,1,line,startPosInLine, inputString));
-						state = State.START;
-					}
-				}
-				case INTLITERAL ->
-				{					
-					if(Character.isDigit(ch))
-					{
-						digits += ch;
-						//System.out.println("char: " + Character.toString(ch));
-						pos++;
-						posInLine++;
-					}
-					else
-					{
-						//System.out.println("digits: " + digits);						
-						try
-						{
-							Integer.parseInt(digits);
-							tokens.add(new Token(Kind.INT_LITERAL, startPos,pos - startPos,line,startPosInLine, inputString));
-						}
-						catch(NumberFormatException e)
-						{
-							//throw error
-							//throw new LexicalException("Unexpected token",line,pos);
-							tokens.add(new Token(Kind.ERROR,startPos,pos - startPos,line,startPosInLine, inputString));
-						}
-						
-						state = State.START;
-						digits = "";
-					}
-				}
-				case IDENT_PART ->
-				{
-					if(Character.isJavaIdentifierPart(ch) && ch != EOFchar)
-					{
-						inProgIdent += ch;
-						pos++;
-						posInLine++;
-						//System.out.println("got here");
-						//System.out.println("ident: " + inProgIdent);
-					}
-					else
-					{
-						//System.out.println("ident: " + inProgIdent);
-						//check if inProgIdent is a reserved word
-						if(keywords.containsKey(inProgIdent))
-						{
-							//System.out.println("got here");
-							tokens.add(new Token(keywords.get(inProgIdent),startPos, pos- startPos, line, startPosInLine , inputString));
-						}
-						else
-						{
-							tokens.add(new Token(Kind.IDENTIFIER,startPos, pos- startPos, line, startPosInLine, inputString ));
-						}
-						state = State.START;
-						inProgIdent = "";
-					}
-				}
-			}
-			
-			
+				}	
+			}		
 		}
 		
-	//	System.out.println("Input String: " + inputString);
-		
-//		for(int i = 0; i < tokens.size(); i++)
-//		{
-//			System.out.println("Token text value: " + tokens.get(i).getText());
-//		}
-//		
-//		for(int i = 0; i < tokens.size(); i++)
-//		{
-//			System.out.println("Token string value: " + tokens.get(i).getStringValue());
-//		}
-		
-		
 		tokens.add(new Token(Kind.EOF,pos,0,line,startPosInLine, inputString));
-		
-		
-		
+	
 	}
 	
 	@Override

@@ -84,7 +84,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	 *  This method should be invoked after all instructions for the method have been generated, immediately before invoking mv.visitMaxs.
 	 */
 	private void addLocals(MethodVisitorLocalVarTable arg, Label start, Label end) {
-		
+		System.out.println("METHOD: LOCALS");
 		MethodVisitor mv = arg.mv;
 		List<LocalVarInfo> localVars = arg.localVars();
 		for (int slot = 0; slot < localVars.size(); slot++) {
@@ -95,11 +95,12 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		    Label range1 = varInfo.end == null ? end : varInfo.end;
 		    mv.visitLocalVariable(varName, localVarDesc, null, range0, range1, slot);
 		}
-		System.out.println("GOT TO END OF addLocals - GIVEN");
+		//System.out.println("GOT TO END OF addLocals - GIVEN");
 	}
 	
 	@Override
 	public Object visitIProgram(IProgram n, Object arg) throws Exception {
+		System.out.println("METHOD: PROGRAM");
 		cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 		/*
 		 * If the call to mv.visitMaxs(1, 1) crashes, it is sometime helpful to temporarily try it without COMPUTE_FRAMES. You won't get a runnable class file
@@ -149,40 +150,41 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		//finish the clas
 		cw.visitEnd();
 
-		System.out.println("GOT TO END OF visitIProgram - GIVEN");
+		//System.out.println("GOT TO END OF visitIProgram - GIVEN");
 		//generate classfile as byte array and return
 		return cw.toByteArray();
 	}
 
 	@Override
 	public Object visitIBinaryExpression(IBinaryExpression n, Object arg) throws Exception {		//STILL WIP
+		System.out.println("METHOD: BIN EXPR");
 		//get the method visitor from the arg
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
 		
 		//store ref to left and right exprs
 		IExpression left = n.getLeft();
 		IExpression right = n.getRight();
-	
-		//visit left and right expression args
-		left.visit(this, arg);
-		right.visit(this, arg);
-			
+		
 		IType leftType = left.getType();
 		IType rightType = right.getType();
-		
+	
+		//visit left and right expression args
+		//puts values of left and right expressions on top of the stack
+		left.visit(this, arg);
+		right.visit(this, arg);
+					
 		//get the operator kind
 		Kind op = n.getOp();
 		
-		Label start;
+		Label start = new Label();
 		Label stop;
 		
+		//change instructions based on op
+		//do the action that the op specifies on the two items on top of the stack
 		if(op == Kind.EQUALS)
 		{
-			//returns bool
-			//combined with boolean, same instructions
-			if(left.getType().isKind(TypeKind.INT) || left.getType().isKind(TypeKind.BOOLEAN))		//if the type of the left expression is INT
-			{
-				start = new Label();
+			if(left.getType().isKind(TypeKind.INT) || left.getType().isKind(TypeKind.BOOLEAN))		
+			{			 
 				mv.visitJumpInsn(IF_ICMPNE, start);
 				mv.visitInsn(ICONST_1);
 				stop = new Label();
@@ -191,10 +193,9 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 				mv.visitInsn(ICONST_0);
 				mv.visitLabel(stop);
 			}
-			else if(left.getType().isKind(TypeKind.STRING))		//if the type of the left expression is STRING
+			else if(left.getType().isKind(TypeKind.STRING))		
 			{
-				start = new Label();
-				mv.visitJumpInsn(IF_ACMPEQ, start);
+				mv.visitJumpInsn(IF_ACMPNE, start);
 				mv.visitInsn(ICONST_1);
 				stop = new Label();
 				mv.visitJumpInsn(GOTO, stop);
@@ -205,12 +206,8 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		}
 		else if(op == Kind.NOT_EQUALS)
 		{
-			//returns bool
-			//combined again, same instructions
-			if(left.getType().isInt() || left.getType().isBoolean())		//if the type of the left expression is INT
+			if(left.getType().isInt() || left.getType().isBoolean())	
 			{
-				System.out.println("FLAG 1");
-				start = new Label();
 				mv.visitJumpInsn(IF_ICMPEQ, start);
 				mv.visitInsn(ICONST_1);
 				stop = new Label();
@@ -219,17 +216,21 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 				mv.visitInsn(ICONST_0);
 				mv.visitLabel(stop);
 			}
-			else if(left.getType().isKind(TypeKind.STRING))		//if the type of the left expression is STRING
+			else if(left.getType().isKind(TypeKind.STRING))	
 			{
-				
+				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z", false);
+				mv.visitInsn(ICONST_1);
+				stop = new Label();
+				mv.visitJumpInsn(GOTO, stop);
+				mv.visitLabel(start);
+				mv.visitInsn(ICONST_0);
+				mv.visitLabel(stop);
 			}
 		}
 		else if(op == Kind.LT)
 		{
-			//returns bool
 			if(left.getType().isKind(TypeKind.INT) )		
 			{
-				start = new Label();
 				mv.visitJumpInsn(IF_ICMPGE, start);
 				mv.visitInsn(ICONST_1);
 				stop = new Label();
@@ -240,10 +241,13 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 			}
 			else if(left.getType().isKind(TypeKind.STRING))		
 			{				
-				
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z", false);
-				
-							
+				mv.visitInsn(ICONST_1);
+				stop = new Label();
+				mv.visitJumpInsn(GOTO, stop);
+				mv.visitLabel(start);
+				mv.visitInsn(ICONST_0);
+				mv.visitLabel(stop);		
 			}
 		}
 		else if(op == Kind.GT)
@@ -251,7 +255,6 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 			//returns bool
 			if(left.getType().isKind(TypeKind.INT))		
 			{
-				start = new Label();
 				mv.visitJumpInsn(IF_ICMPLE, start);
 				mv.visitInsn(ICONST_1);
 				stop = new Label();
@@ -260,67 +263,57 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 				mv.visitInsn(ICONST_0);
 				mv.visitLabel(stop);
 			}
-			else if(left.getType().isKind(TypeKind.STRING))		//if the type of the left expression is STRING
+			else if(left.getType().isKind(TypeKind.STRING))		
 			{
-				
-				
-				
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z", false);
+				mv.visitInsn(ICONST_1);
+				stop = new Label();
+				mv.visitJumpInsn(GOTO, stop);
+				mv.visitLabel(start);
+				mv.visitInsn(ICONST_0);
+				mv.visitLabel(stop);
 				
 			}
 		}
 		else if(op == Kind.PLUS)
 		{
-			//returns arg type
-			if(leftType.isInt() && rightType.isInt())		//if the type of both exprs is int
+			if(leftType.isInt() && rightType.isInt())		
 			{
-				System.out.println("here");
-				mv.visitInsn(IADD);
-				
+				mv.visitInsn(IADD);			
 			}
-			else if(leftType.isString() && rightType.isString())		//if the type of the left & right exprs is STRING
+			else if(leftType.isString() && rightType.isString())	
 			{
-				//not sure if this is right
 				//for some reason this concatenates the first string to itself, not the first to the second
-				
-				//mv.visitVarInsn(ALOAD, 0);
-				//mv.visitFieldInsn(GETFIELD, className, "y", stringDesc);
-				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "myConcat", "("+stringDesc+stringDesc+")"+stringDesc,false);
-				
+				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "myConcat", "("+stringDesc+stringDesc+")"+stringDesc,false);			
 			}
-			else if(left.getType().isKind(TypeKind.LIST))		//if the type of the left expression is LIST
+			else if(left.getType().isKind(TypeKind.LIST))		
 			{
 				throw new UnsupportedOperationException("LIST NOT IMPLEMENTED");
 			}
 		}
 		else if(op == Kind.MINUS)
 		{
-			//returns int
-			if(leftType.isInt() && rightType.isInt())		//if the type of both exprs is int
+			if(leftType.isInt() && rightType.isInt())		
 			{
-				mv.visitInsn(ISUB);
-				
+				mv.visitInsn(ISUB);				
 			}
 		}
 		else if(op == Kind.TIMES)
 		{
-			//returns int
-			if(leftType.isInt() && rightType.isInt())		//if the type of the left expression is INT
+			if(leftType.isInt() && rightType.isInt())	
 			{
 				mv.visitInsn(IMUL);
 			}
 		}
 		else if(op == Kind.DIV)
 		{
-			//returns int
-			if(leftType.isInt() && rightType.isInt())		//if the type of the left expression is INT
+			if(leftType.isInt() && rightType.isInt())		
 			{
 				mv.visitInsn(IDIV);
 			}
 		}
 		else if(op == Kind.AND)
 		{
-			//returns bool
 			if(left.getType().isKind(TypeKind.BOOLEAN))		
 			{
 				mv.visitInsn(IAND);
@@ -328,13 +321,12 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		}
 		else if(op == Kind.OR)
 		{
-			//returns bool
 			if(left.getType().isKind(TypeKind.BOOLEAN))		
 			{
 				mv.visitInsn(IOR);
 			}
 		}
-		System.out.println("GOT TO END OF visitIBinaryExpression");
+
 		return null;
 		//throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
@@ -342,19 +334,19 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitIBlock(IBlock n, Object arg) throws Exception {
+		System.out.println("METHOD: BLOCK");
 		List<IStatement> statements = n.getStatements();
 		for(IStatement statement: statements) {
 			statement.visit(this, arg);
 		}
-		System.out.println("GOT TO END OF visitIBlock - GIVEN");
 		return null;
 	}
 
 	@Override
 	public Object visitIBooleanLiteralExpression(IBooleanLiteralExpression n, Object arg) throws Exception {
+		System.out.println("METHOD: BOOL LIT EXPR");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable) arg).mv();
 		mv.visitLdcInsn(n.getValue());
-		System.out.println("GOT TO END OF visitIBooleanLiteralExpression - GIVEN");
 		return null;
 	}
 
@@ -362,6 +354,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	
 	@Override
 	public Object visitIFunctionDeclaration(IFunctionDeclaration n, Object arg) throws Exception {
+		System.out.println("METHOD: FUNC DEC");
 		String name = n.getName().getName();
 
 		//Local var table
@@ -403,14 +396,13 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		Label funcEnd = new Label();
 		mv.visitLabel(funcEnd);
 		
-		addLocals(context, funcStart, funcEnd);
 
 		mv.visitMaxs(0, 0);
 		
 		//terminate construction of method
 		mv.visitEnd();
 		
-		System.out.println("GOT TO END OF visitIFunctionDeclaration - GIVEN");
+		//System.out.println("GOT TO END OF visitIFunctionDeclaration - GIVEN");
 		return null;
 
 	}
@@ -420,32 +412,43 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	//ASSIGNMENT 6
 	@Override
 	public Object visitIFunctionCallExpression(IFunctionCallExpression n, Object arg) throws Exception {
-		String name = n.getName().getName();
+		System.out.println("METHOD: FUNC CALL EXPR");
+		IIdentifier ident = n.getName();
+		String name = ident.getName();
 		
-		List<IExpression> exprList = n.getArgs();
-
-		for( IExpression e: exprList) {
-
-			e.visit(this, arg);
+		IDeclaration dec = (IDeclaration) ident.visit(this, null);
+		if(dec instanceof IFunctionDeclaration) {
+			IFunctionDeclaration fdec = (IFunctionDeclaration) dec;
+			List<INameDef> formalArgDecs = fdec.getArgs();
+			List<IExpression> actualArgs = n.getArgs();
+			if(formalArgDecs.size()==actualArgs.size()) {
+				for( int i = 0; i < actualArgs.size();i++) {
+					actualArgs.get(i).visit(this, arg);
+					
+				}
+			}
+					
 		}
 
-		
-		System.out.println("GOT TO END OF visitIFunctionCallExpression");
 		return null;
 		//throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
 
 	@Override
 	public Object visitIIdentExpression(IIdentExpression n, Object arg) throws Exception {
+		System.out.println("METHOD: IDENT EXPR");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
-		//Gen code to load value of variable on top of stack.  
-		//Instructions will depend on type and whether local of global.
+
 		IIdentifier id = n.getName();
-		String name = id.getName();
+		String name = id.getName();	
+		int slot = id.getSlot();
 		
 		if(n.getType().isInt()) {
-			//mv.visitVarInsn(ILOAD, id.getSlot());
+			//CodeGenUtils.genDebugPrintTOS(mv, n.getType());
+			
 			mv.visitFieldInsn(GETSTATIC, className, name, "I");
+			System.out.println("This static");
+			
 		}
 		else if(n.getType().isBoolean()) {
 			mv.visitFieldInsn(GETSTATIC, className, name, "Z");
@@ -454,20 +457,23 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 			//mv.visitVarInsn(ALOAD, id.getSlot());
 			mv.visitFieldInsn(GETSTATIC, className, name, stringDesc);
 		}
-		System.out.println("GOT TO END OF visitIIdentExpression");
-		return null;
-		//check if id name is a local or global var
+
+		//System.out.println("name: " + name);
+		//System.out.println("slot: " + slot);
+		//CodeGenUtils.genDebugPrintTOS(mv, n.getType());
 		
+		return null;
 		//throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
 
 	@Override
 	public Object visitIIdentifier(IIdentifier n, Object arg) throws Exception {
+		System.out.println("METHOD: IDENT");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
 		int iSlot = n.getSlot();
 		String varName = n.getName();
-	
-		System.out.println("GOT TO END OF visitIIdentifier");
+		
+
 		//return null;
 		throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
@@ -475,26 +481,25 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	@Override
 	public Object visitIIfStatement(IIfStatement n, Object arg) throws Exception {	
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
+		
 		IExpression gaurd = n.getGuardExpression();
 		gaurd.visit(this, arg);	
-
-		
-		mv.visitLdcInsn(IFEQ);
-		
 		IBlock block = n.getBlock();
 		block.visit(this, arg);
 		
-		
-		
+//		Label start = new Label();
+//		mv.visitJumpInsn(IFEQ, start);
+//		
+//		
+//		mv.visitLabel(start);
 
-		return null;
-
-		
+		return null;	
 		//throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
 
 	@Override
 	public Object visitIImmutableGlobal(IImmutableGlobal n, Object arg) throws Exception {
+		System.out.println("METHOD: IMMUTABLE GLOB");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;				
 		INameDef nameDef = n.getVarDef();
 		String varName = nameDef.getIdent().getName();
@@ -505,65 +510,88 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		IExpression e = n.getExpression();
 		e.visit(this, arg);  //generate code to leave value of expression on top of stack
 		mv.visitFieldInsn(PUTSTATIC, className, varName, typeDesc);	
-		System.out.println("GOT TO END OF visitIImmutableGlobal - GIVEN");
+		//System.out.println("GOT TO END OF visitIImmutableGlobal - GIVEN");
 		return null;
 	}
 	
 	@Override
-	//DONE I THINK
 	public Object visitIMutableGlobal(IMutableGlobal n, Object arg) throws Exception {
+		System.out.println("METHOD: MUTABLE GLOB");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;				
 		INameDef nameDef = n.getVarDef();
 		String varName = nameDef.getIdent().getName();
-		String typeDesc = nameDef.getType().getDesc();
+		String typeDesc = nameDef.getType().getDesc();	
 		
+		System.out.println("typeDesc: "+  typeDesc);
 		
 		FieldVisitor fieldVisitor = cw.visitField(ACC_PUBLIC | ACC_STATIC | ACC_FINAL, varName, typeDesc, null, null);
 		fieldVisitor.visitEnd();
 		//generate code to initialize field.  
 		IExpression e = n.getExpression();
-		
+					
 		if(e != null) {
-			System.out.println("E IS NOT NULL");
-			//mv.visitVarInsn(ALOAD, 0);
-			e.visit(this, arg);  //generate code to leave value of expression on top of stack
-		}
-		
-		//this is from ASMifier,how to access value of var x here?
-		//why is e null here? 
-//		if(typeDesc == "I") {
-//			mv.visitIntInsn(BIPUSH, 44);
-//		}
-//		else if(typeDesc == stringDesc){
-//			mv.visitLdcInsn("Gruetzi");
-//		}
-//		else if(typeDesc == "Z") {
-//			mv.visitInsn(ICONST_0);
-//		}
+			e.visit(this, arg);  //generate code to leave value of expression on top of stack		
+			mv.visitFieldInsn(PUTSTATIC, className, varName, typeDesc);	
+						
+		}	
 		
 		
-		mv.visitFieldInsn(PUTSTATIC, className, varName, typeDesc);	
-		
-		
-		System.out.println("GOT TO END OF visitIMutableGlobal. VarName: "  + varName);
-		System.out.println("typeDesc: " + typeDesc);
-		//System.out.println("expr: " + e.toString());
 		return null;
 		
-		//throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
 
 	@Override
 	public Object visitIIntLiteralExpression(IIntLiteralExpression n, Object arg) throws Exception {
+		System.out.println("METHOD: INT LIT EXP");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;	
 		mv.visitLdcInsn(n.getValue());
-		System.out.println("GOT TO END OF visitIIntLiteralExpression - GIVEN: " + n.getValue());
 		return null;
 	}
 
 	@Override
-	public Object visitILetStatement(ILetStatement n, Object arg) throws Exception {
-		throw new UnsupportedOperationException("TO IMPLEMENT");
+	public Object visitILetStatement(ILetStatement n, Object arg) throws Exception {	
+		System.out.println("METHOD: LET STATEMENT");
+		//Local var table
+		List<LocalVarInfo> localVars = new ArrayList<LocalVarInfo>();
+		
+		//get localDef
+		INameDef localDef = n.getLocalDef();
+		
+		String desc = localDef.getType().getDesc();
+		
+		localDef.getIdent().setSlot(localVars.size());
+		localVars.add(new LocalVarInfo(localDef.getIdent().getName(), desc, null, null));
+		
+		IExpression e = n.getExpression();
+		
+		
+		// get method visitor
+		MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, localDef.getIdent().getName(), desc, null, null);
+		// initialize
+		mv.visitCode();
+		// mark beginning of instructions for method
+		Label funcStart = new Label();
+		mv.visitLabel(funcStart);
+		MethodVisitorLocalVarTable context = new MethodVisitorLocalVarTable(mv, localVars);
+		if(e != null) {
+			e.visit(this, context);
+		}
+		//visit block to generate code for statements
+		n.getBlock().visit(this, context);
+			
+		//add label after last instruction
+		Label funcEnd = new Label();
+		mv.visitLabel(funcEnd);
+		
+
+		mv.visitMaxs(0, 0);
+		
+		//terminate construction of method
+		mv.visitEnd();
+		
+		//System.out.println("GOT TO END OF visitLetStatement");
+		return null;
+		//throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
 		
 
@@ -592,6 +620,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitIReturnStatement(IReturnStatement n, Object arg) throws Exception {
+		System.out.println("METHOD: RETURN STATEMENT");
 		//get the method visitor from the arg
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
 		IExpression e = n.getExpression();
@@ -605,16 +634,18 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		else { //there is no argument, (and we have verified duirng type checking that function has void return type) so use this return statement.  
 			mv.visitInsn(RETURN);
 		}
-		System.out.println("GOT TO END OF visitIReturnStatement - GIVEN");
+		//System.out.println("GOT TO END OF visitIReturnStatement - GIVEN");
 		return null;
 	}
 
 	@Override
 	//DONE I THINK
 	public Object visitIStringLiteralExpression(IStringLiteralExpression n, Object arg) throws Exception {
+		System.out.println("METHOD: STRING LIT EXPR");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
+		
+		System.out.println("STRING: " + n.toString());
 		mv.visitLdcInsn(n.getValue());
-		System.out.println("GOT TO END OF visitIStringLiteralExpression - GIVEN: " + n.getValue());
 		return null;
 		//throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
@@ -628,6 +659,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	@Override
 	//DONE I THINK
 	public Object visitIUnaryExpression(IUnaryExpression n, Object arg) throws Exception {
+		System.out.println("METHOD: UNARY EXPR");
 		//get method visitor from arg
 		MethodVisitor mv = ((MethodVisitorLocalVarTable) arg).mv();
 		//generate code to leave value of expression on top of stack
@@ -639,6 +671,7 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		switch(op) {
 		case MINUS -> {
 			if (operandType.isInt()) {
+				//mv.visitInsn(INEG);
 				mv.visitMethodInsn(INVOKESTATIC, runtimeClass, "minus", "(I)I",false);
 			}
 			//throw new UnsupportedOperationException("IMPLEMENT unary minus");
@@ -662,15 +695,16 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		}
 		default -> throw new UnsupportedOperationException("compiler error");
 		}
-		System.out.println("GOT TO END OF visitIUnaryExpression");
 		return null;
 	}
 
 	@Override
 	public Object visitIWhileStatement(IWhileStatement n, Object arg) throws Exception {
-		
+		System.out.println("METHOD: WHILE STATEMENT");
+		MethodVisitor mv = ((MethodVisitorLocalVarTable) arg).mv();
 		n.getGuardExpression().visit(this, arg);
 		n.getBlock().visit(this, arg);
+		
 		
 		return null;
 		//throw new UnsupportedOperationException("TO IMPLEMENT");
@@ -688,15 +722,27 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitIAssignmentStatement(IAssignmentStatement n, Object arg) throws Exception {
+		System.out.println("METHOD: ASSIGN STATMENT");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable) arg).mv();
-		
+
 		IExpression left = n.getLeft();
 		IExpression right = n.getRight();
 		
+		right.visit(this, arg);
 		left.visit(this, arg);
-		right.visit(this, arg);		
 		
-		System.out.println("GOT TO END OF visitIAssignmentStatement");
+		//CodeGenUtils.genDebugPrintTOS(mv, left.getType());
+		
+		if(left instanceof IIdentExpression) {
+			IIdentifier id = ((IIdentExpression) left).getName();
+			//mv.visitFieldInsn(PUTSTATIC, className, id.getName(), "I");
+//			IDeclaration dec = id.getDec();
+//			dec.visit(this, arg);
+			
+			//mv.visitVarInsn(ALOAD,id.getSlot());
+		}
+
+		
 		
 		return null;
 		//throw new UnsupportedOperationException("TO IMPLEMENT");

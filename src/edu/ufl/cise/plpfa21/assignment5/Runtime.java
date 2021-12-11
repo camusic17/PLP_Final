@@ -7,7 +7,7 @@ public class Runtime {
 	}
 	
 	public static int minus(int arg) {
-		return -1 * arg;
+		return (-arg);
 	}
 	
 	public static String myConcat(String arg1, String arg2) {

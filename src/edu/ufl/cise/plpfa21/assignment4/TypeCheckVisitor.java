@@ -215,16 +215,15 @@ public class TypeCheckVisitor implements ASTVisitor {
 	@Override
 	public Object visitIIfStatement(IIfStatement n, Object arg) throws Exception {
 		//DONE?
-		//throw new UnsupportedOperationException("IMPLEMENT ME!");
-		
 		n.getGuardExpression().visit(this, arg);
-		n.getBlock().visit(this, arg);
+		
 		if(n.getGuardExpression().getType() != PrimitiveType__.booleanType)
 		{
 			throw new TypeCheckException(n.getGuardExpression().getType() + " != BOOLEAN");
 		}
+		n.getBlock().visit(this, arg);
 		return arg;
-		
+	
 	}
 
 	@Override
@@ -274,8 +273,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 		bl.visit(this, arg);
 		return arg;
 		
-		
-		//throw new UnsupportedOperationException("IMPLEMENT ME!");
 	}
 
 	@Override
@@ -404,9 +401,8 @@ public class TypeCheckVisitor implements ASTVisitor {
 	@Override
 	public Object visitISwitchStatement(ISwitchStatement n, Object arg) throws Exception {
 		//TODO
-		
-		IExpression e = n.getSwitchExpression();
-		IType t = (IType) e.visit(this, arg);
+
+		IType t = (IType) n.getSwitchExpression().visit(this, arg);
 		
 		check(t.isBoolean() || t.isInt() || t.isString(), n, "");
 		List<IExpression> exprs = n.getBranchExpressions();
