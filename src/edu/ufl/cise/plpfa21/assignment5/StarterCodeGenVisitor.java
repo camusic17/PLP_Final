@@ -413,22 +413,22 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	@Override
 	public Object visitIFunctionCallExpression(IFunctionCallExpression n, Object arg) throws Exception {
 		System.out.println("METHOD: FUNC CALL EXPR");
+		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
 		IIdentifier ident = n.getName();
 		String name = ident.getName();
+		List<IExpression> args = n.getArgs();
 		
-		IDeclaration dec = (IDeclaration) ident.visit(this, null);
-		if(dec instanceof IFunctionDeclaration) {
-			IFunctionDeclaration fdec = (IFunctionDeclaration) dec;
-			List<INameDef> formalArgDecs = fdec.getArgs();
-			List<IExpression> actualArgs = n.getArgs();
-			if(formalArgDecs.size()==actualArgs.size()) {
-				for( int i = 0; i < actualArgs.size();i++) {
-					actualArgs.get(i).visit(this, arg);
-					
-				}
-			}
-					
+		
+		if (args.size() > 0)
+		{			
+			for (IExpression e : args)
+			{
+				e.visit(this, arg);				
+			}		
 		}
+		mv.visitMethodInsn(INVOKESTATIC, className, name, null,false);
+		
+		
 
 		return null;
 		//throw new UnsupportedOperationException("TO IMPLEMENT");
@@ -442,6 +442,8 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 		IIdentifier id = n.getName();
 		String name = id.getName();	
 		int slot = id.getSlot();
+		
+		
 		
 		if(n.getType().isInt()) {
 			//CodeGenUtils.genDebugPrintTOS(mv, n.getType());
@@ -470,12 +472,23 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 	public Object visitIIdentifier(IIdentifier n, Object arg) throws Exception {
 		System.out.println("METHOD: IDENT");
 		MethodVisitor mv = ((MethodVisitorLocalVarTable)arg).mv;
-		int iSlot = n.getSlot();
+		
 		String varName = n.getName();
 		
+		List<LocalVarInfo> locals = ((MethodVisitorLocalVarTable)arg).localVars;
 
-		//return null;
-		throw new UnsupportedOperationException("TO IMPLEMENT");
+		for (int i = 0; i < locals.size(); i++)
+		{
+			if (varName.equals(locals.get(i).name))
+			{
+				n.setSlot(i);
+				n.setLocal(true);			
+			}
+		}
+
+		return null;
+
+		//throw new UnsupportedOperationException("TO IMPLEMENT");
 	}
 
 	@Override
@@ -608,7 +621,21 @@ public class StarterCodeGenVisitor implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitINameDef(INameDef n, Object arg) throws Exception {
-		throw new UnsupportedOperationException();
+		IIdentifier id = n.getIdent();
+		String name = id.getName();
+				
+		IType t = n.getType();
+		if (n.getIdent().getLocal())
+		{
+			List<LocalVarInfo> localVars = ((MethodVisitorLocalVarTable)arg).localVars;
+			id.setSlot(localVars.size());
+			localVars.add(new LocalVarInfo(name, t.getDesc(), null, null));
+
+		}
+
+		return null;
+		
+		//throw new UnsupportedOperationException();
 	}
 
 	@Override
